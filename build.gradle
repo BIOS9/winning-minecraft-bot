@@ -1,0 +1,79 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	// Loom adds Minecraft/Fabric maven repos automatically.
+}
+
+loom {
+	accessWidenerPath = file("src/main/resources/yrushwinner.accesswidener")
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Guice — bundled into the mod jar via Loom's include.
+	// no_aop classifier strips AOP/cglib; not needed and avoids reflective access warnings.
+	// jakarta.inject-api is a required Guice 7 transitive not already on the MC classpath.
+	include(implementation('com.google.inject:guice:7.0.0'))
+	include(implementation('jakarta.inject:jakarta.inject-api:2.0.1'))
+
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+	withSourcesJar()
+}
+
+jar {
+	inputs.property "projectName", project.name
+	from("LICENSE") {
+		rename { "${it}_${project.name}" }
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+sourceSets {
+	calibration {
+		java { srcDirs = ['src/calibration/java'] }
+		compileClasspath += main.compileClasspath + main.output
+		runtimeClasspath += main.runtimeClasspath + main.output
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+}

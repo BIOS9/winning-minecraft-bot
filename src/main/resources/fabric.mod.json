@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "yrushwinner",
+  "version": "${version}",
+  "name": "Y-Rush Winner",
+  "description": "Autonomous bot that plays the Y-Rush minigame.",
+  "authors": [],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "ciaassured.yrushwinner.YRushWinnerClient"
+    ]
+  },
+  "accessWidener": "yrushwinner.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.19.2",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

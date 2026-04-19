@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "ciaassured.yrushwinner.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "KeyboardInputMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
