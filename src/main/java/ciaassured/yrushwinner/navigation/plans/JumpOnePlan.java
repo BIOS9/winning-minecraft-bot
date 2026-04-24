@@ -22,7 +22,7 @@ public class JumpOnePlan implements PathPlan {
         this.pos = pos;
 
         // Calculate cost
-        double distance = pos.getSquaredDistance(previous.getPos());
+        double distance = Math.sqrt(pos.getSquaredDistance(previous.getPos()));
         realTimeCost = (distance / TimeCostModel.WALK_SPEED_BPS) + TimeCostModel.JUMP_PENALTY_S + previous.getRealTimeCost();
 
         this.estimatedTimeCost = realTimeCost + heuristicTimeCost;
@@ -57,6 +57,11 @@ public class JumpOnePlan implements PathPlan {
 
         // Feet and head at destination must be clear.
         if (!MoveHelpers.isPassable(world, dest) || !MoveHelpers.isPassable(world, dest.up())) {
+            return Optional.empty();
+        }
+
+        // Never jump to a position directly above lava — player would fall in on landing.
+        if (MoveHelpers.isLava(world, dest.down())) {
             return Optional.empty();
         }
 

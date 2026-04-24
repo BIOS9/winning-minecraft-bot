@@ -6,7 +6,8 @@ public final class TimeCostModel {
     // Source: https://minecraft.wiki/w/Sprinting
     public static final double SPRINT_SPEED_BPS = 5.612;
     public static final double WALK_SPEED_BPS   = 4.317;
-    public static final double SWIM_SPEED_BPS   = 2.2;    // horizontal underwater
+    public static final double SWIM_SPEED_BPS   = 2.2;    // horizontal underwater (fully submerged, pressing space)
+    public static final double WADE_SPEED_BPS   = 1.0;    // horizontal through shallow water (head above surface) — needs calibration
     public static final double SINK_SPEED_BPS   = 1.5;    // descending in water
     public static final double JUMP_PENALTY_S   = 0.5;    // extra time per jump in navigation
 

@@ -21,7 +21,7 @@ public class AStarNavigator implements Navigator {
     // Just keep it simple for now, basically check all movement plans, if movement plan exists, then movement is possible. Movement plan will be able to be executed in future, this couples the possibility of the action with the execution of the action which is what we want.
 
 
-    private static final int MAX_NODES = 100_000;
+    private static final int MAX_NODES = 10_000_000;
 
     private final PathPlanner pathPlanner;
 
@@ -31,11 +31,10 @@ public class AStarNavigator implements Navigator {
     }
 
     @Override
-    public Optional<PathPlan> findPath(BlockPos start, PathGoal goal) {
+    public Optional<PathPlan> findPath(BlockPos start, PathGoal goal, double maxDistance) {
         PriorityQueue<PathPlan> open = new PriorityQueue<>();
         Map<BlockPos, Double> lowestTimeCosts = new HashMap<>();
 
-        double startH = goal.heuristic(start);
         open.add(new RootPathPlan(start));
         lowestTimeCosts.put(start, 0.0);
 
@@ -54,6 +53,9 @@ public class AStarNavigator implements Navigator {
             visited++;
 
             for (PathPlan neighbour : pathPlanner.getNeighbours(current, goal)) {
+                if (neighbour.getPos().getSquaredDistance(start) > maxDistance * maxDistance) {
+                    continue;
+                }
                 if (neighbour.getRealTimeCost() < lowestTimeCosts.getOrDefault(neighbour.getPos(), Double.MAX_VALUE)) {
                     lowestTimeCosts.put(neighbour.getPos(), neighbour.getRealTimeCost());
                     open.add(neighbour);

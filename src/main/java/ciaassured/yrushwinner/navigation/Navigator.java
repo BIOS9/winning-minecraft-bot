@@ -15,5 +15,5 @@ public interface Navigator {
      * @return ordered waypoints from start (exclusive) to goal (inclusive),
      *         or an empty list if no path exists.
      */
-    Optional<PathPlan> findPath(BlockPos start, PathGoal goal);
+    Optional<PathPlan> findPath(BlockPos start, PathGoal goal, double maxDistance);
 }

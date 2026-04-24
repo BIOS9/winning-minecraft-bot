@@ -55,7 +55,7 @@ public final class GotoCommand implements ManagedService {
                         }
 
                         BlockPos start = client.player.getBlockPos();
-                        Optional<PathPlan> path = navigator.findPath(start, new YLevelGoal(targetY));
+                        Optional<PathPlan> path = navigator.findPath(start, new YLevelGoal(targetY), 500);
 
                         if (path.isEmpty()) {
                             ctx.getSource().sendFeedback(Text.literal("No path found to Y=" + targetY));

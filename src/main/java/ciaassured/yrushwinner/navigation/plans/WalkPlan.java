@@ -22,7 +22,7 @@ public class WalkPlan implements PathPlan {
         this.pos = pos;
 
         // Calculate cost
-        double distance = pos.getSquaredDistance(previous.getPos());
+        double distance = Math.sqrt(pos.getSquaredDistance(previous.getPos()));
         realTimeCost = (distance / TimeCostModel.SPRINT_SPEED_BPS) + previous.getRealTimeCost();
 
         this.estimatedTimeCost = realTimeCost + heuristicTimeCost;
@@ -46,12 +46,17 @@ public class WalkPlan implements PathPlan {
         }
 
         // Gravity: if no solid block below, player is in freefall — only straight down valid.
-        if (MoveHelpers.isPassable(world, pos.down())) {
+        if (!MoveHelpers.isSolid(world, pos.down())) {
             return Optional.empty();
         }
 
         // Feet and head at destination must be clear.
         if (!MoveHelpers.isPassable(world, dest) || !MoveHelpers.isPassable(world, dest.up())) {
+            return Optional.empty();
+        }
+
+        // Never walk to a position directly above lava — player would fall in.
+        if (MoveHelpers.isLava(world, dest.down())) {
             return Optional.empty();
         }
 
