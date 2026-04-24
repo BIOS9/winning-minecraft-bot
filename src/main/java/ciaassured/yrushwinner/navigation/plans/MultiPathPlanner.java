@@ -8,6 +8,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 public class MultiPathPlanner implements PathPlanner {
@@ -32,13 +33,26 @@ public class MultiPathPlanner implements PathPlanner {
     }
 
     public Collection<PathPlan> findNextPlans(PathPlan plan, BlockPos dest, double heuristicTimeCost) {
-        ArrayList<PathPlan> result = new ArrayList<>(1);
+        HashMap<BlockPos, PathPlan> result = new HashMap<>();
 
         ClientWorld world = MinecraftClient.getInstance().world;
 
-        WalkPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(result::add);
-        JumpOnePlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(result::add);
+        WalkPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
+        JumpOnePlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
+        FallPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
+        SwimPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
+        WadeWaterPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
 
-        return result;
+        return result.values();
+    }
+
+    // Key by plan.getPos() (the actual landing position) so FallPlan landing positions
+    // are deduplicated correctly even though they differ from the dest passed in.
+    private void addIfCheaper(HashMap<BlockPos, PathPlan> map, PathPlan plan) {
+        BlockPos pos = plan.getPos();
+        PathPlan existing = map.get(pos);
+        if (existing == null || plan.getRealTimeCost() < existing.getRealTimeCost()) {
+            map.put(pos, plan);
+        }
     }
 }
