@@ -30,7 +30,7 @@ dependencies {
 	include(implementation('com.google.inject:guice:7.0.0'))
 	include(implementation('jakarta.inject:jakarta.inject-api:2.0.1'))
 
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+	testImplementation 'org.junit.jupiter:junit-jupiter:6.0.3'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
