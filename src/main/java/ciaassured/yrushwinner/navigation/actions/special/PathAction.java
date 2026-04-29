@@ -14,4 +14,7 @@ public interface PathAction extends Comparable<PathAction> {
     double getTotalEstimatedTimeCost();
     void execute();
     List<BlockPos> getCompletePath();
+
+    /** ARGB color used to render this action's segment in the debug overlay. */
+    default int renderColor() { return 0xFFFFFFFF; }
 }
