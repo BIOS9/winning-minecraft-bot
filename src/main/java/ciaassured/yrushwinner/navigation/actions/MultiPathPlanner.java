@@ -1,20 +1,27 @@
-package ciaassured.yrushwinner.navigation.plans;
+package ciaassured.yrushwinner.navigation.actions;
 
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
+import ciaassured.yrushwinner.util.BlockBreakTimeCalculator;
 import jakarta.inject.Inject;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 public class MultiPathPlanner implements PathPlanner {
 
+    private final BlockBreakTimeCalculator breakCalc;
+
     @Inject
-    public MultiPathPlanner() { }
+    public MultiPathPlanner(BlockBreakTimeCalculator breakCalc) {
+        this.breakCalc = breakCalc;
+    }
 
     // All positions reachable in a single step (≤1 block in each axis, excluding self).
     public Iterable<PathPlan> getNeighbours(PathPlan plan, PathGoal goal) {
@@ -35,13 +42,18 @@ public class MultiPathPlanner implements PathPlanner {
     public Collection<PathPlan> findNextPlans(PathPlan plan, BlockPos dest, double heuristicTimeCost) {
         HashMap<BlockPos, PathPlan> result = new HashMap<>();
 
-        ClientWorld world = MinecraftClient.getInstance().world;
+        MinecraftClient client = MinecraftClient.getInstance();
+        ClientWorld world = client.world;
+        List<ItemStack> tools = client.player != null
+                ? client.player.getInventory().getMainStacks()
+                : Collections.emptyList();
 
         WalkPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
         JumpOnePlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
         FallPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
         SwimPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
         WadeWaterPlan.makePlan(plan, dest, world, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
+        BlockBreakPlan.makePlan(plan, dest, world, tools, breakCalc, heuristicTimeCost).ifPresent(p -> addIfCheaper(result, p));
 
         return result.values();
     }

@@ -1,11 +1,10 @@
 package ciaassured.yrushwinner.navigation;
 
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
-import ciaassured.yrushwinner.navigation.plans.PathPlan;
-import ciaassured.yrushwinner.navigation.plans.PathPlanner;
-import ciaassured.yrushwinner.navigation.plans.RootPathPlan;
+import ciaassured.yrushwinner.navigation.actions.PathPlan;
+import ciaassured.yrushwinner.navigation.actions.PathPlanner;
+import ciaassured.yrushwinner.navigation.actions.RootPathPlan;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.*;

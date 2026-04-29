@@ -1,8 +1,6 @@
-package ciaassured.yrushwinner.navigation.plans;
+package ciaassured.yrushwinner.navigation.actions;
 
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
-
-import java.util.Collection;
 
 public interface PathPlanner {
     Iterable<PathPlan> getNeighbours(PathPlan plan, PathGoal goal);

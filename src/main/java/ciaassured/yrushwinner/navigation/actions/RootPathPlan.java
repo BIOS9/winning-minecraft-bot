@@ -1,4 +1,4 @@
-package ciaassured.yrushwinner.navigation.plans;
+package ciaassured.yrushwinner.navigation.actions;
 
 import net.minecraft.util.math.BlockPos;
 import org.jspecify.annotations.NonNull;

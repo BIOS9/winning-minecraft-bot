@@ -1,10 +1,9 @@
 package ciaassured.yrushwinner.navigation;
 
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
-import ciaassured.yrushwinner.navigation.plans.PathPlan;
+import ciaassured.yrushwinner.navigation.actions.PathPlan;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface Navigator {
