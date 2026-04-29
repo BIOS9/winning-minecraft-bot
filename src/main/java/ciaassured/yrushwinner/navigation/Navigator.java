@@ -1,9 +1,12 @@
 package ciaassured.yrushwinner.navigation;
 
+import ciaassured.yrushwinner.navigation.gamestate.GameState;
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
-import ciaassured.yrushwinner.navigation.actions.PathPlan;
+import ciaassured.yrushwinner.navigation.actions.special.PathAction;
+import ciaassured.yrushwinner.navigation.validators.PathValidator;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface Navigator {
@@ -14,5 +17,5 @@ public interface Navigator {
      * @return ordered waypoints from start (exclusive) to goal (inclusive),
      *         or an empty list if no path exists.
      */
-    Optional<PathPlan> findPath(BlockPos start, PathGoal goal, double maxDistance);
+    Optional<PathAction> findPath(BlockPos start, PathGoal goal, GameState gameState, Collection<PathValidator> validators) throws InterruptedException;
 }
