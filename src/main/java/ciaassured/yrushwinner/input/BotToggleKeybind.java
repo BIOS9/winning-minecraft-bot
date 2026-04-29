@@ -3,22 +3,31 @@ package ciaassured.yrushwinner.input;
 import ciaassured.yrushwinner.infrastructure.InjectLogger;
 import ciaassured.yrushwinner.infrastructure.ManagedService;
 import ciaassured.yrushwinner.navigation.Navigator;
+import ciaassured.yrushwinner.navigation.gamestate.GameState;
+import ciaassured.yrushwinner.navigation.gamestate.OriginalGameState;
 import ciaassured.yrushwinner.navigation.goals.YLevelGoal;
-import ciaassured.yrushwinner.navigation.actions.PathPlan;
+import ciaassured.yrushwinner.navigation.actions.special.PathAction;
 import ciaassured.yrushwinner.navigation.render.PathRenderer;
+import ciaassured.yrushwinner.navigation.validators.AbsoluteTimeLimitValidator;
+import ciaassured.yrushwinner.navigation.validators.PathValidator;
+import ciaassured.yrushwinner.navigation.validators.RadiusValidator;
 import ciaassured.yrushwinner.network.GameChatListener;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,12 +62,14 @@ public final class BotToggleKeybind implements ManagedService {
             if (!binding.wasPressed() || client.player == null) return;
 
             Optional<Integer> targetY = chatListener.getTargetY();
-            if (targetY.isEmpty()) {
+            Optional<Instant> gameStartTime = chatListener.getGameStartTime();
+            if (targetY.isEmpty() || gameStartTime.isEmpty()) {
                 client.player.sendMessage(Text.literal("[YRush] No target Y — wait for round start"), false);
                 return;
             }
 
             int y = targetY.get();
+            Instant startTime = gameStartTime.get();
             BlockPos start = client.player.getBlockPos();
 
             Thread existing = calculationThread.get();
@@ -72,10 +83,15 @@ public final class BotToggleKeybind implements ManagedService {
 
             Thread thread = Thread.ofVirtual().name("yrushwinner-pathfind").unstarted(() -> {
                 try {
-                    Optional<PathPlan> path = navigator.findPath(start, new YLevelGoal(y), 500);
-                    if (Thread.currentThread().isInterrupted()) return;
+                    List<PathValidator> validators = new ArrayList<>();
+                    validators.add(new RadiusValidator(500, start)); // Only paths up to 300 blocks around
+                    validators.add(new AbsoluteTimeLimitValidator(startTime.plusSeconds(60 * 4).plusSeconds(2))); // Only paths up to 4 minutes
+
+                    GameState gameState = new OriginalGameState(MinecraftClient.getInstance());
+
+                    Optional<PathAction> path = navigator.findPath(start, new YLevelGoal(y), gameState, validators);
+                    if (Thread.currentThread().isInterrupted()) { return; }
                     client.execute(() -> {
-                        if (!calculationThread.compareAndSet(Thread.currentThread(), null)) return;
                         if (path.isEmpty()) {
                             client.player.sendMessage(Text.literal(String.format("[YRush] No path found to Y=%d", y)), false);
                             logger.info("goto Y={} from {} — no path found", y, start);
@@ -86,7 +102,11 @@ public final class BotToggleKeybind implements ManagedService {
                             logger.info("goto Y={} from {} → {} steps", y, start, completePath.size());
                         }
                     });
-                } finally {
+                }
+                catch (InterruptedException e) {
+                    logger.warn("Interrupted");
+                }
+                finally {
                     calculationThread.compareAndSet(Thread.currentThread(), null);
                 }
             });

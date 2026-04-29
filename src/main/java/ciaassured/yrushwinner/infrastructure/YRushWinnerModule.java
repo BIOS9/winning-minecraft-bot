@@ -1,9 +1,8 @@
 package ciaassured.yrushwinner.infrastructure;
 
 import ciaassured.yrushwinner.input.BotToggleKeybind;
-import ciaassured.yrushwinner.input.GotoCommand;
-import ciaassured.yrushwinner.navigation.MultiPathPlanner;
-import ciaassured.yrushwinner.navigation.PathPlanner;
+import ciaassured.yrushwinner.navigation.planning.MultiPathPlanner;
+import ciaassured.yrushwinner.navigation.planning.PathPlanner;
 import ciaassured.yrushwinner.network.GameChatListener;
 import ciaassured.yrushwinner.navigation.AStarNavigator;
 import ciaassured.yrushwinner.navigation.Navigator;
@@ -57,7 +56,6 @@ public class YRushWinnerModule extends AbstractModule {
         Multibinder<ManagedService> services = Multibinder.newSetBinder(binder(), ManagedService.class);
         services.addBinding().to(DebugPathRenderer.class);
         services.addBinding().to(BotToggleKeybind.class);
-        services.addBinding().to(GotoCommand.class);
         services.addBinding().to(GameChatListener.class);
     }
 }

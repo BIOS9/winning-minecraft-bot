@@ -9,7 +9,7 @@ public class MoveHelpers {
 
     /**
      * True if a non-swimming player can occupy this block (air, flowers, etc.).
-     * Water is explicitly excluded — it is handled by SwimPlan via isWater().
+     * Water is explicitly excluded — it is handled by SwimAction via isWater().
      */
     public static boolean isPassable(ClientWorld world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);

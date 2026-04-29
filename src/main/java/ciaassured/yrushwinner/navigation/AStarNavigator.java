@@ -1,11 +1,17 @@
 package ciaassured.yrushwinner.navigation;
 
+import ciaassured.yrushwinner.infrastructure.InjectLogger;
+import ciaassured.yrushwinner.navigation.gamestate.GameState;
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
-import ciaassured.yrushwinner.navigation.actions.PathPlan;
-import ciaassured.yrushwinner.navigation.actions.RootPathPlan;
+import ciaassured.yrushwinner.navigation.actions.special.PathAction;
+import ciaassured.yrushwinner.navigation.actions.special.RootPathPlan;
+import ciaassured.yrushwinner.navigation.planning.PathPlanner;
+import ciaassured.yrushwinner.navigation.validators.PathValidator;
 import jakarta.inject.Inject;
 import net.minecraft.util.math.BlockPos;
+import org.slf4j.Logger;
 
+import javax.xml.validation.Validator;
 import java.util.*;
 
 public class AStarNavigator implements Navigator {
@@ -23,44 +29,59 @@ public class AStarNavigator implements Navigator {
 
     private final PathPlanner pathPlanner;
 
+    @InjectLogger private Logger logger;
+
     @Inject
     public AStarNavigator(PathPlanner pathPlanner) {
         this.pathPlanner = pathPlanner;
     }
 
     @Override
-    public Optional<PathPlan> findPath(BlockPos start, PathGoal goal, double maxDistance) {
-        PriorityQueue<PathPlan> open = new PriorityQueue<>();
+    public Optional<PathAction> findPath(BlockPos start, PathGoal goal, GameState gameState, Collection<PathValidator> validators) throws InterruptedException {
+        PriorityQueue<PathAction> open = new PriorityQueue<>();
         Map<BlockPos, Double> lowestTimeCosts = new HashMap<>();
 
-        open.add(new RootPathPlan(start));
+        open.add(new RootPathPlan(start, gameState));
         lowestTimeCosts.put(start, 0.0);
 
         int visited = 0;
         while (!open.isEmpty() && visited < MAX_NODES) {
-            PathPlan current = open.poll();
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new InterruptedException();
+            }
 
-            if (goal.isGoal(current.getPos())) {
+            PathAction current = open.poll();
+
+            // Throw away any paths that do not pass all validation rules
+            if (validators.stream().anyMatch(x -> !x.isValid(current))) {
+                logger.info("Invalid path thrown out with estimated cost of {}s", current.getTotalEstimatedTimeCost());
+                continue;
+            }
+
+            if (visited % 10000 == 0)
+                logger.info("Current path: {}", current.getTotalEstimatedTimeCost());
+
+            if (goal.isGoal(current.getFinalPosition())) {
+                logger.info("Path found");
                 return Optional.of(current);
             }
 
             // Skip stale entries (open set may hold outdated nodes for same pos).
-            if (current.getRealTimeCost() > lowestTimeCosts.getOrDefault(current.getPos(), Double.MAX_VALUE)) {
+            if (current.getCurrentRealTimeCost() > lowestTimeCosts.getOrDefault(current.getFinalPosition(), Double.MAX_VALUE)) {
                 continue;
             }
             visited++;
 
-            for (PathPlan neighbour : pathPlanner.getNeighbours(current, goal)) {
-                if (neighbour.getPos().getSquaredDistance(start) > maxDistance * maxDistance) {
-                    continue;
-                }
-                if (neighbour.getRealTimeCost() < lowestTimeCosts.getOrDefault(neighbour.getPos(), Double.MAX_VALUE)) {
-                    lowestTimeCosts.put(neighbour.getPos(), neighbour.getRealTimeCost());
+            for (PathAction neighbour : pathPlanner.getNeighbours(current, goal)) {
+                if (neighbour.getCurrentRealTimeCost() < lowestTimeCosts.getOrDefault(neighbour.getFinalPosition(), Double.MAX_VALUE)) {
+                    lowestTimeCosts.put(neighbour.getFinalPosition(), neighbour.getCurrentRealTimeCost());
                     open.add(neighbour);
                 }
             }
         }
 
+        logger.info("No path found");
         return Optional.empty();
     }
 }

@@ -10,7 +10,10 @@ import net.minecraft.text.Text;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,9 +27,14 @@ public final class GameChatListener implements ManagedService {
     @InjectLogger private Logger logger;
 
     private volatile @Nullable Integer targetY;
+    private volatile @Nullable Instant gameStartTime;
 
     public Optional<Integer> getTargetY() {
         return Optional.ofNullable(targetY);
+    }
+
+    public Optional<Instant> getGameStartTime() {
+        return Optional.ofNullable(gameStartTime);
     }
 
     @Inject
@@ -51,6 +59,7 @@ public final class GameChatListener implements ManagedService {
             int currentY = client.player.getBlockPos().getY();
             int newTargetY = currentY + yDelta;
             this.targetY = newTargetY;
+            this.gameStartTime = Instant.now();
 
             String direction = yDelta > 0 ? "UP" : "DOWN";
             logger.info("Round start: {} {} BLOCKS → target Y={}", verb, delta, newTargetY);
