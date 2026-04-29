@@ -1,34 +1,34 @@
-package ciaassured.yrushwinner.navigation.plans;
+package ciaassured.yrushwinner.navigation.actions;
 
 import ciaassured.yrushwinner.navigation.MoveHelpers;
 import ciaassured.yrushwinner.navigation.TimeCostModel;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
-import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class WalkPlan implements PathPlan {
+public class JumpOnePlan implements PathPlan {
     private final PathPlan previous;
     private final BlockPos pos;
     private final double realTimeCost;
     private final double estimatedTimeCost;
 
-    private WalkPlan(@NonNull PathPlan previous, BlockPos pos, double heuristicTimeCost) {
+    private JumpOnePlan(@NonNull PathPlan previous, BlockPos pos, double heuristicTimeCost) {
         this.previous = previous;
         this.pos = pos;
 
         // Calculate cost
         double distance = Math.sqrt(pos.getSquaredDistance(previous.getPos()));
-        realTimeCost = (distance / TimeCostModel.SPRINT_SPEED_BPS) + previous.getRealTimeCost();
+        realTimeCost = (distance / TimeCostModel.WALK_SPEED_BPS) + TimeCostModel.JUMP_PENALTY_S + previous.getRealTimeCost();
 
         this.estimatedTimeCost = realTimeCost + heuristicTimeCost;
     }
 
-    public static Optional<WalkPlan> makePlan(PathPlan previous, BlockPos dest, ClientWorld world, double heuristicTimeCost) {
+    public static Optional<JumpOnePlan> makePlan(PathPlan previous, BlockPos dest, ClientWorld world, double heuristicTimeCost) {
         BlockPos pos = previous.getPos();
 
         if (dest.equals(pos)) {
@@ -41,12 +41,17 @@ public class WalkPlan implements PathPlan {
         int dx = Math.abs(sdx);
         int dz = Math.abs(sdz);
 
-        if (dx > 1 || Math.abs(dy) > 0 || dz > 1) {
+        if (dx > 1 || dy != 1 || dz > 1) {
+            return Optional.empty();
+        }
+
+        // No jump-in-place: dy=1 with no horizontal delta returns player to same block.
+        if (dy == 1 && dx == 0 && dz == 0) {
             return Optional.empty();
         }
 
         // Gravity: if no solid block below, player is in freefall — only straight down valid.
-        if (!MoveHelpers.isSolid(world, pos.down())) {
+        if (MoveHelpers.isPassable(world, pos.down())) {
             return Optional.empty();
         }
 
@@ -55,7 +60,12 @@ public class WalkPlan implements PathPlan {
             return Optional.empty();
         }
 
-        // Never walk to a position directly above lava — player would fall in.
+        // Head +1 at current block must be clear.
+        if (!MoveHelpers.isPassable(world, pos.up(2))) {
+            return Optional.empty();
+        }
+
+        // Never jump to a position directly above lava — player would fall in on landing.
         if (MoveHelpers.isLava(world, dest.down())) {
             return Optional.empty();
         }
@@ -64,13 +74,13 @@ public class WalkPlan implements PathPlan {
         if (dx == 1 && dz == 1) {
             BlockPos elbowX = new BlockPos(pos.getX() + sdx, pos.getY(), pos.getZ());
             BlockPos elbowZ = new BlockPos(pos.getX(), pos.getY(), pos.getZ() + sdz);
-            if (!MoveHelpers.isPassable(world, elbowX) || !MoveHelpers.isPassable(world, elbowX.up())
-                    || !MoveHelpers.isPassable(world, elbowZ) || !MoveHelpers.isPassable(world, elbowZ.up())) {
+            if (!MoveHelpers.isPassable(world, elbowX.up()) || !MoveHelpers.isPassable(world, elbowX.up(2)) ||
+                !MoveHelpers.isPassable(world, elbowZ.up()) || !MoveHelpers.isPassable(world, elbowZ.up(2))) {
                 return Optional.empty();
             }
         }
 
-        return Optional.of(new WalkPlan(previous, dest, heuristicTimeCost));
+        return Optional.of(new JumpOnePlan(previous, dest, heuristicTimeCost));
     }
 
     @Override

@@ -1,4 +1,4 @@
-package ciaassured.yrushwinner.navigation.plans;
+package ciaassured.yrushwinner.navigation.actions;
 
 import ciaassured.yrushwinner.navigation.MoveHelpers;
 import ciaassured.yrushwinner.navigation.TimeCostModel;
