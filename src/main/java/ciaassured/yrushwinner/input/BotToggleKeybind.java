@@ -96,10 +96,18 @@ public final class BotToggleKeybind implements ManagedService {
                             client.player.sendMessage(Text.literal(String.format("[YRush] No path found to Y=%d", y)), false);
                             logger.info("goto Y={} from {} — no path found", y, start);
                         } else {
-                            List<BlockPos> completePath = path.get().getCompletePath();
-                            pathRenderer.setPath(completePath);
-                            client.player.sendMessage(Text.literal(String.format("[YRush] Path ready: %d steps to Y=%d", completePath.size(), y)), false);
-                            logger.info("goto Y={} from {} → {} steps", y, start, completePath.size());
+                            PathAction terminal = path.get();
+                            pathRenderer.setPath(terminal);
+                            int steps = terminal.getCompletePath().size();
+                            int estSecs = (int) Math.round(terminal.getCurrentRealTimeCost());
+                            int remainSecs = Math.max(0, 240 - estSecs);
+                            String msg = String.format(
+                                    "[YRush] Path ready: %d steps to Y=%d | est. %d:%02d | done at %d:%02d",
+                                    steps, y,
+                                    estSecs / 60, estSecs % 60,
+                                    remainSecs / 60, remainSecs % 60);
+                            client.player.sendMessage(Text.literal(msg), false);
+                            logger.info("goto Y={} from {} → {} steps, est {}s", y, start, steps, estSecs);
                         }
                     });
                 }
