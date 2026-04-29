@@ -1,5 +1,6 @@
-package ciaassured.yrushwinner.navigation.actions;
+package ciaassured.yrushwinner.navigation;
 
+import ciaassured.yrushwinner.navigation.actions.PathPlan;
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
 
 public interface PathPlanner {
