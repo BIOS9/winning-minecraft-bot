@@ -1,5 +1,6 @@
-package ciaassured.yrushwinner.navigation.actions;
+package ciaassured.yrushwinner.navigation;
 
+import ciaassured.yrushwinner.navigation.actions.*;
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
 import ciaassured.yrushwinner.util.BlockBreakTimeCalculator;
 import jakarta.inject.Inject;

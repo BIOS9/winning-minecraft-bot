@@ -2,7 +2,6 @@ package ciaassured.yrushwinner.navigation;
 
 import ciaassured.yrushwinner.navigation.goals.PathGoal;
 import ciaassured.yrushwinner.navigation.actions.PathPlan;
-import ciaassured.yrushwinner.navigation.actions.PathPlanner;
 import ciaassured.yrushwinner.navigation.actions.RootPathPlan;
 import jakarta.inject.Inject;
 import net.minecraft.util.math.BlockPos;

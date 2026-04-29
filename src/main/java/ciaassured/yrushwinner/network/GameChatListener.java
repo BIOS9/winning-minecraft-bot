@@ -2,18 +2,15 @@ package ciaassured.yrushwinner.network;
 
 import ciaassured.yrushwinner.infrastructure.InjectLogger;
 import ciaassured.yrushwinner.infrastructure.ManagedService;
-import ciaassured.yrushwinner.navigation.Navigator;
-import ciaassured.yrushwinner.navigation.goals.YLevelGoal;
-import ciaassured.yrushwinner.navigation.render.PathRenderer;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.text.Text;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,14 +23,14 @@ public final class GameChatListener implements ManagedService {
 
     @InjectLogger private Logger logger;
 
-    private final Navigator navigator;
-    private final PathRenderer pathRenderer;
+    private volatile @Nullable Integer targetY;
+
+    public Optional<Integer> getTargetY() {
+        return Optional.ofNullable(targetY);
+    }
 
     @Inject
-    public GameChatListener(Navigator navigator, PathRenderer pathRenderer) {
-        this.navigator = navigator;
-        this.pathRenderer = pathRenderer;
-    }
+    public GameChatListener() {}
 
     @Override
     public void start() {
@@ -51,28 +48,18 @@ public final class GameChatListener implements ManagedService {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null) return;
 
-            int targetY = client.player.getBlockPos().getY() + yDelta;
-            logger.info("Round start: {} {} BLOCKS → target Y={}", verb, delta, targetY);
-            planPathAsync(targetY, client);
+            int currentY = client.player.getBlockPos().getY();
+            int newTargetY = currentY + yDelta;
+            this.targetY = newTargetY;
+
+            String direction = yDelta > 0 ? "UP" : "DOWN";
+            logger.info("Round start: {} {} BLOCKS → target Y={}", verb, delta, newTargetY);
+
+            client.player.sendMessage(
+                Text.literal(String.format("[YRush] Target Y=%d (%s %d blocks) — press C to calculate path",
+                    newTargetY, direction, Math.abs(yDelta))),
+                false
+            );
         });
-    }
-
-    private void planPathAsync(int targetY, MinecraftClient client) {
-        if (client.player == null || client.world == null) return;
-
-        BlockPos start = client.player.getBlockPos();
-        ClientWorld world = client.world;
-
-//        Thread.ofVirtual().name("yrushwinner-pathfind").start(() -> {
-//            List<BlockPos> path = navigator.findPath(start, new YLevelGoal(targetY));
-//            client.execute(() -> {
-//                if (path.isEmpty()) {
-//                    logger.warn("No path found to Y={} from {}", targetY, start);
-//                } else {
-//                    pathRenderer.setPath(path);
-//                    logger.info("Path planned to Y={}: {} steps", targetY, path.size());
-//                }
-//            });
-//        });
     }
 }

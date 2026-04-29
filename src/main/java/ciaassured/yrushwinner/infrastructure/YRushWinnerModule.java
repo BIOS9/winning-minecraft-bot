@@ -2,12 +2,11 @@ package ciaassured.yrushwinner.infrastructure;
 
 import ciaassured.yrushwinner.input.BotToggleKeybind;
 import ciaassured.yrushwinner.input.GotoCommand;
-import ciaassured.yrushwinner.navigation.plans.MultiPathPlanner;
-import ciaassured.yrushwinner.navigation.plans.PathPlanner;
+import ciaassured.yrushwinner.navigation.MultiPathPlanner;
+import ciaassured.yrushwinner.navigation.PathPlanner;
 import ciaassured.yrushwinner.network.GameChatListener;
 import ciaassured.yrushwinner.navigation.AStarNavigator;
 import ciaassured.yrushwinner.navigation.Navigator;
-import ciaassured.yrushwinner.navigation.StepChecker;
 import ciaassured.yrushwinner.navigation.render.DebugPathRenderer;
 import ciaassured.yrushwinner.navigation.render.PathRenderer;
 import com.google.inject.AbstractModule;
