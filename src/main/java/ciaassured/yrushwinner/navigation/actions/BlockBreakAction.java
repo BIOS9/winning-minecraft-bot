@@ -80,4 +80,7 @@ public class BlockBreakAction extends BasePathAction {
 
     @Override
     public void execute() { }
+
+    @Override
+    public int renderColor() { return 0xFFFF2222; } // red
 }

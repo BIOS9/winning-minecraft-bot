@@ -1,6 +1,7 @@
 package ciaassured.yrushwinner.navigation.render;
 
 import ciaassured.yrushwinner.infrastructure.ManagedService;
+import ciaassured.yrushwinner.navigation.actions.special.PathAction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -12,9 +13,10 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderSetup;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Singleton
@@ -33,9 +35,11 @@ public final class DebugPathRenderer implements PathRenderer, ManagedService {
     );
 
     private final RenderLayer layer;
+    private record Seg(Vec3d a, Vec3d b, int argb) {}
+
     // Volatile: written from bot thread, read from render thread.
     // Replaced atomically with a fully-built immutable list — no partial reads possible.
-    private volatile List<Vec3d> activePath = null;
+    private volatile List<Seg> activePath = null;
 
     @Inject
     public DebugPathRenderer() {
@@ -49,23 +53,22 @@ public final class DebugPathRenderer implements PathRenderer, ManagedService {
     @Override
     public void start() {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-            List<Vec3d> path = activePath;
-            if (path == null || path.size() < 2) return;
+            List<Seg> path = activePath;
+            if (path == null || path.isEmpty()) return;
 
             Vec3d cam = context.worldState().cameraRenderState.pos;
-            int segments = path.size() - 1;
 
             context.commandQueue().submitCustom(
                     context.matrices(),
                     layer,
                     (entry, consumer) -> {
-                        for (int i = 0; i < segments; i++) {
-                            Vec3d a = path.get(i);
-                            Vec3d b = path.get(i + 1);
-                            // Gradient: green at path start → red at path end.
-                            float t = (float) i / segments;
-                            int r = (int) (255 * t);
-                            int g = (int) (255 * (1f - t));
+                        for (Seg seg : path) {
+                            Vec3d a = seg.a();
+                            Vec3d b = seg.b();
+                            int argb = seg.argb();
+                            int r = (argb >> 16) & 0xFF;
+                            int g = (argb >>  8) & 0xFF;
+                            int bl = argb & 0xFF;
 
                             // Billboard quad: expand segment perpendicular to both
                             // segment direction and camera view direction so the quad
@@ -79,10 +82,10 @@ public final class DebugPathRenderer implements PathRenderer, ManagedService {
                             float rx = (float) right.x,      ry = (float) right.y,      rz = (float) right.z;
 
                             // Quad corners (CCW when facing camera):
-                            consumer.vertex(entry, ax - rx, ay - ry, az - rz).color(r, g, 0, 255);
-                            consumer.vertex(entry, bx - rx, by - ry, bz - rz).color(r, g, 0, 255);
-                            consumer.vertex(entry, bx + rx, by + ry, bz + rz).color(r, g, 0, 255);
-                            consumer.vertex(entry, ax + rx, ay + ry, az + rz).color(r, g, 0, 255);
+                            consumer.vertex(entry, ax - rx, ay - ry, az - rz).color(r, g, bl, 255);
+                            consumer.vertex(entry, bx - rx, by - ry, bz - rz).color(r, g, bl, 255);
+                            consumer.vertex(entry, bx + rx, by + ry, bz + rz).color(r, g, bl, 255);
+                            consumer.vertex(entry, ax + rx, ay + ry, az + rz).color(r, g, bl, 255);
                         }
                     }
             );
@@ -95,9 +98,21 @@ public final class DebugPathRenderer implements PathRenderer, ManagedService {
     }
 
     @Override
-    public void setPath(List<BlockPos> waypoints) {
-        activePath = (waypoints == null || waypoints.isEmpty()) ? null
-                : waypoints.stream().map(Vec3d::ofCenter).toList();
+    public void setPath(PathAction terminal) {
+        if (terminal == null || terminal.getParent() == null) { activePath = null; return; }
+
+        ArrayList<Seg> segs = new ArrayList<>();
+        PathAction curr = terminal;
+        PathAction prev = terminal.getParent();
+        while (prev != null) {
+            segs.add(new Seg(Vec3d.ofCenter(prev.getFinalPosition()),
+                             Vec3d.ofCenter(curr.getFinalPosition()),
+                             curr.renderColor()));
+            curr = prev;
+            prev = prev.getParent();
+        }
+        Collections.reverse(segs);
+        activePath = segs.isEmpty() ? null : Collections.unmodifiableList(segs);
     }
 
     @Override

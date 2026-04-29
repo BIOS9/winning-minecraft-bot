@@ -80,4 +80,7 @@ public class SwimAction extends BasePathAction {
 
     @Override
     public void execute() { }
+
+    @Override
+    public int renderColor() { return 0xFF00CCFF; } // cyan
 }
